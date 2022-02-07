@@ -9,6 +9,7 @@ from model import Model
 from stimuli.stimulus import PRFStimulus2D
 from signal.irf import IRF, Null_IRF, Arbitrary_IRF
 from signal.hrf import HRF, DD_HRF
+from signal.filter import Filter, Null_Filter, SG_Filter, DCT_Filter
 
 from rf import gauss2D_iso_cart
 
@@ -16,6 +17,7 @@ class Iso2DGaussianModel(Model):
     def __init__(self,
                  stimulus: PRFStimulus2D = None,
                  irf: IRF = None,
+                 filter: Filter = None,
                  normalize_RFs: bool = True,
                  **kwargs):
         """__init__ for Iso2DGaussianModel
@@ -36,6 +38,11 @@ class Iso2DGaussianModel(Model):
             self.irf = irf
         else:
             self.irf = Null_IRF()
+        if filter is not None:
+            self.filter = filter
+        else:
+            self.filter = Null_Filter()
+
         self.normalize_RFs = normalize_RFs
         self.stimulus = stimulus
 

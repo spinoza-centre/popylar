@@ -47,14 +47,12 @@ class DCT_Filter(Filter):
     """DCT_Filter performs a discrete cosine high-pass filter on a timeseries.
     """
     def __init__(self,
-                 model: models.Model):
-        self.model = model
-        signal_duration = self.model.stimulus.masked_design_matrix.shape[-1] / self.model.stimulus.sample_rate
-        self.drop_highpass_modes = 1 + np.floor(2 * self.model.filter_parameters['highpass_dct_freq'] * signal_duration)
-
+                 filter_parameters: dict):
+        self.filter_parameters = filter_parameters
 
     def filter(self,
                 prediction: np.ndarray,
+                sample_rate: float,
                 **kwargs = None) -> np.ndarray:
         """filter just returns the prediction after throwing out certain DCT modes
 
@@ -69,28 +67,26 @@ class DCT_Filter(Filter):
             the filtered prediction
         """
 
+        signal_duration = prediction.shape[-1] / sample_rate
+        drop_highpass_modes = 1 + np.floor(2 * self.filter_parameters['highpass_freq'] * signal_duration)
 
-        coeffs = sp.fft.dct(predictions, norm='ortho', axis=-1)
-        coeffs[:, :self.drop_highpass_modes] = 0
+        coeffs = sp.fft.dct(prediction, norm='ortho', axis=-1)
+        coeffs[:, :drop_highpass_modes] = 0
         filtered_prediction = sp.fft.idct(coeffs, norm='ortho', axis=-1)
 
-        if self.model.filter_parameters['highpass_add'] == 'median':
-            return filtered_prediction + np.median(predictions, axis=-1)
-        elif self.model.filter_parameters['highpass_add'] == 'mean':
-            return filtered_prediction + np.mean(predictions, axis=-1)
-        else:
+        if not 'highpass_add' in self.filter_parameters.keys():
             return filtered_prediction
+        elif self.filter_parameters['highpass_add'] == 'median':
+            return filtered_prediction + np.median(prediction, axis=-1)
+        elif self.filter_parameters['highpass_add'] == 'mean':
+            return filtered_prediction + np.mean(prediction, axis=-1)
 
 class SG_Filter(Filter):
     """SG_Filter performs a savitzky-golay high-pass filter on a timeseries.
     """
     def __init__(self,
-                 model: models.Model):
-        self.model = model
-        signal_duration = self.model.stimulus.masked_design_matrix.shape[-1] / self.model.stimulus.sample_rate
-        self.polyorder = self.model.filter_parameters['highpass_sg_polyorder']
-        self.window_length = self.model.filter_parameters['highpass_sg_window_length']
-
+                 filter_parameters: dict):
+        self.filter_parameters = filter_parameters
 
     def filter(self,
                 prediction: np.ndarray,
@@ -107,15 +103,13 @@ class SG_Filter(Filter):
         np.ndarray
             the filtered prediction (or data)
         """
-
-
         filtered_prediction = sp.signal.savgol_filter(prediction,
-                                                        window_length=self.window_length,
-                                                        polyorder=self.polyorder)
+                                                    window_length=self.filter_parameters['highpass_sg_window_length'],
+                                                    polyorder=self.filter_parameters['highpass_sg_polyorder'])
 
-        if self.model.filter_parameters['highpass_add'] == 'median':
-            return predictions - filtered_prediction + np.median(predictions, axis=-1)
-        elif self.model.filter_parameters['highpass_add'] == 'mean':
-            return predictions - filtered_prediction + np.mean(predictions, axis=-1)
-        else:
-            return predictions - filtered_prediction
+        if not 'highpass_add' in self.filter_parameters.keys():
+            return filtered_prediction
+        elif self.filter_parameters['highpass_add'] == 'median':
+            return filtered_prediction + np.median(prediction, axis=-1)
+        elif self.filter_parameters['highpass_add'] == 'mean':
+            return filtered_prediction + np.mean(prediction, axis=-1)
