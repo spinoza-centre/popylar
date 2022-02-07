@@ -42,3 +42,42 @@ class Null_IRF(IRF):
         """
         return prediction
 
+class Arbitrary_IRF(IRF):
+    """HRF class for arbitrary response functions, supplied as an numpy.ndarray
+    """
+    def __init__(self,
+                irf_kernel: np.ndarray) -> None:
+
+        """__init__ takes a model instance for which this HRF will be used
+
+        Parameters
+        ----------
+        irf_kernel: np.ndarray
+            the actual kernel to use
+
+        """
+        self.irf_kernel = irf_kernel
+
+    def convolve(self,
+                 prediction: np.ndarray,
+                 parameters: lmfit.Parameters) -> np.ndarray:
+        """convolves the prediction with a custom IRFs:
+        the original, the time-derivative, and the dispersion derivative.
+
+        Parameters
+        ----------
+        prediction : np.ndarray
+            prediction to convolve
+        parameters : lmfit.Parameters, optional
+
+
+        Returns
+        -------
+        np.ndarray
+            the original prediction
+        """
+
+        prediction = np.convolve(prediction,
+                                    self.irf_kernel,
+                                    mode='full')[:prediction.shape[0]]
+        return prediction

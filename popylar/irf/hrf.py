@@ -13,7 +13,9 @@ class HRF(IRF):
     """
     def __init__(self,
                 model: models.Model,
+                hrf_type: str = 'spm',
                 time_length: float = 50.0):
+
         """__init__ takes a model instance for which this HRF will be used
 
         Parameters
@@ -21,14 +23,25 @@ class HRF(IRF):
         model : models.Model
             the model instance which will provide the necessary parameters,
             such as TR, etc, etc.
+        hrf_type : str
+            the hrf type, of 'spm' or 'glover'. default is 'spm'
+        time_length : float
+            the length of the hrf kernel timecourse, in [s] as arg for nilearn's hemodynamic_models
+
         """
         self.model = model
         self.TR = 1.0 / self.model.stimulus.sample_rate
         self.time_length = time_length
 
-class SPM_HRF(HRF):
-    """SPM_HRF uses nilearn's spm HRF function
-    """
+        if hrf_type == 'spm':
+            self.hrf_func = hemo.spm_hrf
+        elif hrf_type == 'glover':
+            self.hrf_func = hemo.glover_hrf
+
+        self.hrf_kernel = self.hrf_func(self.TR,
+                                    oversampling=1,
+                                    time_length=self.time_length,
+                                    onset=0.)
 
     def convolve(self,
                  prediction: np.ndarray,
@@ -50,17 +63,37 @@ class SPM_HRF(HRF):
         """
 
         hrf_prediction = np.convolve(prediction,
-                                    hemo.spm_hrf(self.TR,
-                                    oversampling=1,
-                                    time_length=self.time_length,
-                                    onset=0.),
+                                    self.hrf_kernel,
                                     mode='full')[:prediction.shape[0]]
         return prediction
 
-class SPM_DD_HRF(HRF):
-    """SPM_DD_HRF uses nilearn's spm HRF function and its time- and dispersion derivatives,
+class DD_HRF(HRF):
+    """DD_HRF uses nilearn's spm HRF function and its time- and dispersion derivatives,
     the gains of the latter two are taken from parameters and can be given or optimized
     """
+    def __init__(self,
+                model: models.Model,
+                hrf_type: str = 'spm',
+                time_length: float = 50.0):
+        super().__init__(self, model=model, hrf_type=hrf_type, time_length=time_length)
+
+        if hrf_type == 'spm':
+            self.hrf_dt_func = hemo.spm_time_derivative
+            self.hrf_dd_func = hemo.spm_dispersion_derivative
+        elif hrf_type == 'glover':
+            self.hrf_dt_func = hemo.glover_time_derivative
+            self.hrf_dd_func = hemo.glover_dispersion_derivative
+        else:
+            raise ValueError(f'Unknown hrf_type {hrf_type}')
+
+        self.hrf_dt_kernel = self.hrf_dt_func(self.TR,
+                                            oversampling=1,
+                                            time_length=self.time_length,
+                                            onset=0.)
+        self.hrf_dd_kernel = self.hrf_dd_func(self.TR,
+                                            oversampling=1,
+                                            time_length=self.time_length,
+                                            onset=0.)
 
     def convolve(self,
                  prediction: np.ndarray,
@@ -72,32 +105,23 @@ class SPM_DD_HRF(HRF):
         ----------
         prediction : np.ndarray
             prediction to convolve
-        parameters : lmfit.Parameters, optional
+        parameters : lmfit.Parameters, containing hrf_td_gain and hrf_dd_gain parameters
 
 
         Returns
         -------
         np.ndarray
-            the original prediction
+            the prediction
         """
 
         hrf_prediction = np.convolve(prediction,
-                                    hemo.spm_hrf(self.TR,
-                                                oversampling=1,
-                                                time_length=self.time_length,
-                                                onset=0.),
+                                    self.hrf_kernel,
                                     mode='full')[:prediction.shape[0]]
         hrf_td_prediction = np.convolve(prediction,
-                                        hemo.spm_time_derivative(self.TR,
-                                                                oversampling=1,
-                                                                time_length=self.time_length,
-                                                                onset=0.),
+                                        self.hrf_dt_kernel,
                                         mode='full')[:prediction.shape[0]]
         hrf_dd_prediction = np.convolve(prediction,
-                                        hemo.spm_dispersion_derivative(self.TR,
-                                                                        oversampling=1,
-                                                                        time_length=self.time_length,
-                                                                        onset=0.),
+                                        self.hrf_dd_kernel,
                                         mode='full')[:prediction.shape[0]]
 
         return prediction + parameters['hrf_td_gain'].value * hrf_td_prediction + parameters['hrf_dd_gain'].value * hrf_dd_prediction

@@ -9,6 +9,8 @@ from model import Model
 from stimuli.stimulus import PRFStimulus2D
 from irf.irf import IRF, Null_IRF, SPM_HRF, SPM_DD_HRF
 
+from rf import gauss2D_iso_cart
+
 class Iso2DGaussianModel(Model):
     def __init__(self,
                  stimulus: PRFStimulus2D = None,
@@ -34,7 +36,9 @@ class Iso2DGaussianModel(Model):
         else:
             self.irf = Null_IRF()
         self.normalize_RFs = normalize_RFs
+        self.stimulus = stimulus
 
+    @jit
     def return_prediction(self,
                           parameters: lmfit.Parameters) -> np.ndarray:
         """return_prediction returns a prediction timecourse given some set of lmfit parameters
@@ -49,7 +53,34 @@ class Iso2DGaussianModel(Model):
                               mu=[parameters['prf_x'].value, parameters['prf_y'].value],
                               sigma=parameters['prf_size'].value,
                               norm_sum=self.normalize_RFs)
+
         raw_tc = np.dot(rf, self.stimulus.masked_design_matrix)
 
-        return self.irf.convolve(prediction=raw_tc,
-                          parameters=parameters)
+        conv_tc = self.irf.convolve(prediction=raw_tc,
+                                 parameters=parameters)
+        return conv_tc
+
+class CSSIso2DGaussianModel(Model):
+    """CSSIso2DGaussianModel of Kay et al, 2013.
+    """
+    @jit
+    def return_prediction(self,
+                          parameters: lmfit.Parameters) -> np.ndarray:
+        """return_prediction returns a prediction timecourse given some set of lmfit parameters
+
+        Parameters
+        ----------
+        parameters : lmfit.Parameters
+            the Parameters dictionary for this model
+        """
+        rf = gauss2D_iso_cart(x=self.stimulus.masked_coordinates[0],
+                              y=self.stimulus.masked_coordinates[1],
+                              mu=[parameters['prf_x'].value, parameters['prf_y'].value],
+                              sigma=parameters['prf_size'].value,
+                              norm_sum=self.normalize_RFs)
+
+        raw_tc = np.dot(rf, self.stimulus.masked_design_matrix)
+        css_tc = raw_tc ** parameters['prf_css_exponent']
+        conv_tc = self.irf.convolve(prediction=css_tc,
+                                 parameters=parameters)
+        return conv_tc
