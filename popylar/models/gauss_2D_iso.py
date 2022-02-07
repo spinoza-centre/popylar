@@ -7,7 +7,8 @@ import lmfit
 
 from model import Model
 from stimuli.stimulus import PRFStimulus2D
-from irf.irf import IRF, Null_IRF, SPM_HRF, SPM_DD_HRF
+from signal.irf import IRF, Null_IRF, Arbitrary_IRF
+from signal.hrf import HRF, DD_HRF
 
 from rf import gauss2D_iso_cart
 

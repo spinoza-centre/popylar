@@ -5,8 +5,6 @@ try:
 except ImportError:
     import numpy as np
 import lmfit
-import nilearn.glm.first_level.hemodynamic_models as hemo
-import models
 
 class IRF(ABC):
     """IRF

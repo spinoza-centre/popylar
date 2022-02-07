@@ -68,7 +68,7 @@ class HRF(IRF):
         return prediction
 
 class DD_HRF(HRF):
-    """DD_HRF uses nilearn's spm HRF function and its time- and dispersion derivatives,
+    """DD_HRF uses nilearn's HRF functions and their time- and dispersion derivatives,
     the gains of the latter two are taken from parameters and can be given or optimized
     """
     def __init__(self,
