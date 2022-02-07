@@ -1,0 +1,99 @@
+# packages in environment at /Users/knapen/software/miniconda3/envs/popylar:
+#
+# Name                    Version                   Build  Channel
+absl-py                   1.0.0              pyhd8ed1ab_0    conda-forge
+appnope                   0.1.2           py39hecd8cb5_1001  
+asteval                   0.9.23             pyhd8ed1ab_0    conda-forge
+backcall                  0.2.0              pyhd3eb1b0_0  
+ca-certificates           2021.10.8            h033912b_0    conda-forge
+certifi                   2021.10.8        py39h6e9494a_1    conda-forge
+cycler                    0.11.0             pyhd3eb1b0_0    intel
+daal4py                   2021.4.0         py39h24a4e90_0  
+dal                       2021.4.0           hecd8cb5_689  
+debugpy                   1.5.1            py39he9d5cce_0  
+decorator                 5.1.1              pyhd3eb1b0_0  
+dpcpp-cpp-rt              2022.0.0             intel_3615    intel
+dpcpp_cpp_rt              2022.0.0             intel_3615    intel
+entrypoints               0.3              py39hecd8cb5_0  
+fortran_rt                2022.0.0             intel_3615    intel
+freetype                  2.10.4               ha233b18_0    intel
+future                    0.18.2           py39h6e9494a_4    conda-forge
+icc_rt                    2022.0.0             intel_3615    intel
+intel-cmplr-lic-rt        2022.0.0             intel_3615    intel
+intel-fortran-rt          2022.0.0             intel_3615    intel
+intel-openmp              2022.0.0             intel_3615    intel
+intelpython               2022.0.0                      0    intel
+ipykernel                 6.4.1            py39hecd8cb5_1  
+ipython                   7.31.1           py39hecd8cb5_0  
+ipython_genutils          0.2.0              pyhd3eb1b0_1  
+jax                       0.2.28             pyhd8ed1ab_0    conda-forge
+jaxlib                    0.1.74           py39h757cd7f_0    conda-forge
+jedi                      0.18.1           py39hecd8cb5_0  
+joblib                    1.0.1              pyhd3eb1b0_0    intel
+jupyter_client            7.1.2              pyhd3eb1b0_0  
+jupyter_core              4.9.1            py39hecd8cb5_0  
+kiwisolver                1.3.1            py39h23ab428_0    intel
+libcxx                    12.0.0               h2f01273_0  
+libffi                    3.3                  hb1e8313_2  
+libgfortran               3.0.1                h93005f0_2  
+libpng                    1.6.37               ha441bb4_0  
+libsodium                 1.0.18               h1de35cc_0  
+llvm-openmp               10.0.0               h28b9765_0    intel
+lmfit                     1.0.3              pyhd8ed1ab_0    conda-forge
+matplotlib                3.1.2           py39hb1aa42e_11    intel
+matplotlib-inline         0.1.2              pyhd3eb1b0_2  
+mkl                       2022.0.0              intel_105    intel
+mkl-service               2.4.0           py39h66083a5_10    intel
+mkl_fft                   1.3.1            py39h5a7a5aa_7    intel
+mkl_random                1.2.2            py39h12e7438_7    intel
+mkl_umath                 0.1.1           py39h522ba48_17    intel
+mpi                       1.0                       mpich  
+mpich                     3.3.2                hc856adb_0  
+ncurses                   6.3                  hca72f7f_2  
+nest-asyncio              1.5.1              pyhd3eb1b0_0  
+numpy                     1.21.2           py39hb6bd4ac_7    intel
+numpy-base                1.21.2           py39hfeefec3_7    intel
+openssl                   1.1.1l               h0d85af4_0    conda-forge
+opt_einsum                3.3.0              pyhd8ed1ab_1    conda-forge
+packaging                 21.3               pyhd8ed1ab_0    conda-forge
+pandas                    1.2.5            py39h75e3684_2    intel
+parso                     0.8.3              pyhd3eb1b0_0  
+patsy                     0.5.2            py39hecd8cb5_0  
+pexpect                   4.8.0              pyhd3eb1b0_3  
+pickleshare               0.7.5           pyhd3eb1b0_1003  
+pip                       21.2.4           py39hecd8cb5_0  
+prompt-toolkit            3.0.20             pyhd3eb1b0_0  
+ptyprocess                0.7.0              pyhd3eb1b0_2  
+pygments                  2.10.0             pyhd3eb1b0_0  
+pyparsing                 3.0.4              pyhd3eb1b0_0    intel
+python                    3.9.7                h88f2d9e_1  
+python-dateutil           2.8.2                    py39_1    intel
+python-flatbuffers        2.0                pyhd8ed1ab_0    conda-forge
+python_abi                3.9                      2_cp39    conda-forge
+pytz                      2021.3             pyhd3eb1b0_0    intel
+pyzmq                     22.3.0           py39he9d5cce_2  
+readline                  8.1.2                hca72f7f_1  
+scikit-learn              0.24.2           py39hb2f4e1b_0    intel
+scikit-learn-intelex      2021.4.0         py39hecd8cb5_0  
+scipy                     1.6.2            py39hb4c4c6e_5    intel
+setuptools                58.0.4           py39hecd8cb5_0  
+setuptools-scm            6.4.2              pyhd8ed1ab_0    conda-forge
+six                       1.16.0             pyhd3eb1b0_0    intel
+sqlite                    3.37.2               h707629a_0  
+statsmodels               0.13.0           py39hca72f7f_0  
+tbb                       2021.5.0              intel_706    intel
+tbb4py                    2021.5.0         py39_intel_706    intel
+tcl                       8.6.10                        2    intel
+threadpoolctl             2.2.0              pyh0d69192_0    intel
+tk                        8.6.11               h7bc2e8c_0  
+tomli                     2.0.0              pyhd8ed1ab_1    conda-forge
+tornado                   6.1              py39h9ed2024_0  
+traitlets                 5.1.1              pyhd3eb1b0_0  
+typing_extensions         4.0.1              pyha770c72_0    conda-forge
+tzdata                    2021e                hda174b7_0  
+uncertainties             3.1.6              pyhd8ed1ab_0    conda-forge
+wcwidth                   0.2.5              pyhd3eb1b0_0  
+wheel                     0.37.1             pyhd3eb1b0_0  
+xz                        5.2.5                h1de35cc_0  
+zeromq                    4.3.4                h23ab428_0  
+zlib                      1.2.11               h4dc903c_4  
