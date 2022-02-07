@@ -1,4 +1,8 @@
-import numpy as np
+try:
+    import jax.numpy as np
+    from jax import jit
+except ImportError:
+    import numpy as np
 
 class Stimulus:
     """Stimulus
@@ -9,9 +13,9 @@ class Stimulus:
     """
 
     def __init__(self,
-                 design_matrix,
-                 sample_rate,                 
-                 coordinates,
+                 design_matrix: np.ndarray,
+                 sample_rate: float,
+                 coordinates: np.ndarray,
                  **kwargs):
         """__init__ initialize Stimulus
 
@@ -24,24 +28,27 @@ class Stimulus:
         coordinates : numpy.ndarray
             coordinates for the 'pixels' in each of the 'feature' dimensions of the design matrix
         """
-        self.coordinates = coordinates
-        self.design_matrix = design_matrix
+        self.coordinates = coordinates.astype(np.float32)
+        if design_matrix.dtype in (bool, np.uint8):
+            self.design_matrix = design_matrix
+        else:
+            self.design_matrix = design_matrix.astype(np.float32)
         self.sample_rate = sample_rate
         self.__dict__.update(kwargs)
         self.mask_dm()
 
     def mask_dm(self):
         """mask_dm sets up coordinates such that there are no coordinates for design matrix elements that are empty
-        which also converts the design matrix to a 1D array for ease of implementation later 
+        which also converts the design matrix to a 1D array for ease of implementation later
         """
-        self.dm_mask = self.design_matrix.sum(-1) != 0
+        self.dm_mask = self.design_matrix.std(-1) != 0
         self.masked_design_matrix = self.design_matrix[self.dm_mask]
         self.masked_coordinates = [c[self.dm_mask] for c in self.coordinates]
 
 class PRFStimulus1D(Stimulus):
-    """PRFStimulus1D 
+    """PRFStimulus1D
 
-    Minimal 1-dimensional pRF stimulus class, 
+    Minimal 1-dimensional pRF stimulus class,
     which takes an input design matrix and sets up its real-world dimensions.
 
     this type of stimulus could be an auditory pRF stimulus, a numerosity stimulus,
@@ -49,16 +56,16 @@ class PRFStimulus1D(Stimulus):
 
     """
     def __init__(self,
-                design_matrix, 
-                sample_rate, 
-                coordinates,
-                **kwargs):
+                 design_matrix: np.ndarray,
+                 sample_rate: float,
+                 coordinates: np.ndarray,
+                 **kwargs):
         """__init__ initialize PRFStimulus1D
 
         Parameters
         ----------
         design_matrix : numpy.ndarray
-            numpy array containing the design matrix, in 
+            numpy array containing the design matrix, in
             {frequency, log(frequency), numerosity, log(numerosity), distance} dimensions
         sample_rate : float
             amount of samples per second
@@ -69,28 +76,28 @@ class PRFStimulus1D(Stimulus):
 class PRFStimulus2D(Stimulus):
     """PRFStimulus2D
 
-    Minimal visual 2-dimensional pRF stimulus class, 
+    Minimal visual 2-dimensional pRF stimulus class,
     which takes an input design matrix and sets up its real-world dimensions.
 
-    """ 
+    """
     def __init__(self,
-                 design_matrix,
-                 sample_rate,                 
-                 screen_size_cm,
-                 screen_distance_cm,
+                 design_matrix: np.ndarray,
+                 sample_rate: float,
+                 screen_size_cm: float,
+                 screen_distance_cm: float,
                  **kwargs):
         """__init__ initialize PRFStimulus2D
 
         Parameters
         ----------
-        screen_size_cm : float
-            the size of the screen in cms. This refers to the screen width, the first dimension of the design matrix.
-        screen_distance_cm : float
-            the distance from eye to screen in cms.
         design_matrix : numpy.ndarray
             numpy array containing the design matrix, in [horizontal, vertical, time] dimensions
         sample_rate : float
             amount of samples per second
+        screen_size_cm : float
+            the size of the screen in cms. This refers to the screen width, the first dimension of the design matrix.
+        screen_distance_cm : float
+            the distance from eye to screen in cms.
         """
         self.screen_size_cm = screen_size_cm
         self.screen_distance_cm = screen_distance_cm
@@ -109,7 +116,7 @@ class PRFStimulus2D(Stimulus):
         self.x, self.y = np.meshgrid(width_coordinates, height_coordinates)
         super().__init__(coordinates=[self.x, self.y],
                         design_matrix=design_matrix,
-                        sample_rate=sample_rate, 
+                        sample_rate=sample_rate,
                         kwargs=kwargs)
 
 
