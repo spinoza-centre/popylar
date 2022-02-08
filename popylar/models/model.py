@@ -6,6 +6,8 @@ except ImportError:
     import numpy as np
 import lmfit
 from stimuli.stimulus import Stimulus
+from signal.irf import IRF
+from signal.filter import Filter
 
 class Model(ABC):
     """Model
@@ -15,10 +17,13 @@ class Model(ABC):
 
     def __init__(self,
                  stimulus: Stimulus,
+                 irf: IRF = None,
+                 filter: Filter = None,
+                 normalize_RFs: bool = True,
                  **kwargs) -> None:
         """__init__
 
-        constructor for Model, takes stimulus object as argument
+        constructor for Model, takes stimulus, irf and filter objects as argument
 
         Parameters
         ----------
@@ -40,3 +45,4 @@ class Model(ABC):
             the Parameters dictionary for this model
         """
         pass
+

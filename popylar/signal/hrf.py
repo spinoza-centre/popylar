@@ -74,7 +74,7 @@ class DD_HRF(HRF):
     def __init__(self,
                 model: models.Model,
                 hrf_type: str = 'spm',
-                time_length: float = 50.0):
+                time_length: float = 40.0):
         super().__init__(self, model=model, hrf_type=hrf_type, time_length=time_length)
 
         if hrf_type == 'spm':
@@ -105,7 +105,8 @@ class DD_HRF(HRF):
         ----------
         prediction : np.ndarray
             prediction to convolve
-        parameters : lmfit.Parameters, containing hrf_td_gain and hrf_dd_gain parameters
+        parameters : lmfit.Parameters,
+            must contain 'hrf_td_gain' and 'hrf_dd_gain' parameters
 
 
         Returns
@@ -113,7 +114,8 @@ class DD_HRF(HRF):
         np.ndarray
             the prediction
         """
-
+        assert 'hrf_td_gain' in parameters.keys(), \
+                "need hrf_td_gain and hrf_dd_gain parameters to fit the DD_HRF shape"
         hrf_prediction = np.convolve(prediction,
                                     self.hrf_kernel,
                                     mode='full')[:prediction.shape[0]]
