@@ -6,6 +6,7 @@ except ImportError:
     import numpy as np
 import pandas as pd
 import lmfit
+from copy import copy
 import models
 import fit_utils
 
@@ -103,6 +104,24 @@ class PRFFitter(Fitter):
 
 
 class Iso2DGaussianFitter(PRFFitter):
+    def __init__(self,
+                 data: np.ndarray,
+                 model: models.Model,
+                 bounds: dict = None,
+                 **kwargs) -> None:
+        super().__init__(data: np.ndarray,
+                         model: models.Model,
+                         **kwargs)
+        # standard values for bounds should come from a config yaml, but are hard-coded now
+        # to be broad and conform to (more or less) the size of the visual field
+        if bounds is None:
+            bounds = dict(['prf_x', 'prf_y', 'prf_size'], [[-120,120], [-120,120], [0.05, 90]])
+        self.standard_parameters = lmfit.Parameters()
+        for par_name in ['prf_x', 'prf_y', 'prf_size']:
+            self.standard_parameters[par_name] = lmfit.Parameter(name=par_name,
+                                                            value=0.0,
+                                                            min=bounds[par_name][0],
+                                                            max=bounds[par_name][1])
 
     def create_grid_predictions(self,
                     x_grid: np.ndarray,
@@ -126,11 +145,10 @@ class Iso2DGaussianFitter(PRFFitter):
         # create predictions
         self.grid_predictions = np.zeros((self.grid_xs.shape[0], self.model.stimulus.masked_design_matrix.shape[-1]))
         for x, y, size, gi in zip(self.grid_xs, self.grid_ys, self.grid_sizes, np.arange(self.grid_xs.shape[0])):
-            params = lmfit.Parameters()
-            params['prf_x'] = lmfit.Parameter(name='prf_x', value=x, vary=False)
-            params['prf_y'] = lmfit.Parameter(name='prf_y', value=y, vary=False)
-            params['prf_size'] = lmfit.Parameter(name='prf_size', value=size, vary=False)
-            self.grid_predictions[gi] = self.model.return_prediction(params)
+            self.standard_parameters['prf_x'].value = x
+            self.standard_parameters['prf_y'].value = y
+            self.standard_parameters['prf_size'].value = size
+            self.grid_predictions[gi] = self.model.return_prediction(self.standard_parameters)
 
     def collect_grid_results(self,
                              columns: list):
@@ -149,7 +167,7 @@ class Iso2DGaussianFitter(PRFFitter):
                                             self.grid_ys,
                                             self.grid_sizes]):
             self.grid_fit_results[parname] = parvalues[self.best_fit_models]
-        self.grid_fit_results['prf_rsq_grid'] = self.best_fit_rsqs
+        self.grid_fit_results['grid_rsq'] = self.best_fit_rsqs
 
     def grid_fit(self,
                  regressor_df: pd.DataFrame = None,
@@ -170,7 +188,7 @@ class Iso2DGaussianFitter(PRFFitter):
         Parameters
         ----------
         rsq_threshold : float
-            Rsq threshold for iterative fitting. Must be between 0 and 1.
+            Grid-Fit rsq threshold for iterative fitting. Must be between 0 and 1.
         n_jobs : int, optional
             number of jobs to use for the computation. The default is -1.
         optimizer : str, optional
@@ -181,6 +199,8 @@ class Iso2DGaussianFitter(PRFFitter):
         parameters : list of lmfit.Parameters, optional
             parameters for each unit - can be injected from outside.
             The default is None, in which case the Fitter tries to get them from the grid stage
+            In this case, the basic rule is that if the name of the parameter starts with `prf_`,
+            it is set to vary
 
         Returns
         -------
@@ -190,10 +210,21 @@ class Iso2DGaussianFitter(PRFFitter):
 
         # set up Parameters objects for each unit, with their starting points
         # either from Grid Fit or from direct injection
+        if hasattr(self, grid_fit_results):
+            rsq_mask = self.grid_fit_results['rsq_grid'] > rsq_threshold
+        else:
+            rsq_mask = np.ones((self.n_units), dtype=bool)
         if parameters is None:
             assert hasattr(self, grid_fit_results), \
                 'need to run grid fitting before iterative fitting if no parameters are given.'
-            parameters =
-        rsq_mask = self.grid_fit_results['prf_rsq_grid'] > rsq_threshold
+            parameters = []
+            for unit in np.arange(self.n_units):
+                pars = copy(self.standard_parameters)
+                pars['prf_x'].value = self.grid_fit_results['prf_x'].iloc[unit]
+                pars['prf_y'].value = self.grid_fit_results['prf_y'].iloc[unit]
+                pars['prf_size'].value = self.grid_fit_results['prf_size'].iloc[unit]
+                parameters.append(pars)
+
+
 
 

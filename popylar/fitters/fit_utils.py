@@ -8,7 +8,7 @@ import lmfit
 import pandas as pd
 import models
 
-def error_function(
+def glm_error_function(
         parameters: lmfit.Parameters,
         data: np.ndarray,
         objective_function: Callable,
@@ -35,7 +35,7 @@ def error_function(
     error : float
         The residual sum of squared errors between the prediction and data.
     """
-    prediction = objective_function(parameters)
+    prediction = objective_function(parameters, **args)
     regressor_df['glm_prf_amplitude'] = prediction
     betas, residuals, _, _ = np.linalg.lstsq(regressor_df, data, rcond=None)
     for reg_name, beta in zip(regressor_df.columns, betas):
@@ -47,6 +47,32 @@ def error_function(
     # get y-hat from GLM betas and dm, and return error "timecourse"
     model = np.dot(betas, regressor_df.T)
     return np.nan_to_num(model - data, nan=1e12).sum()
+
+def diff_error_function(
+        parameters: lmfit.Parameters,
+        data: np.ndarray,
+        objective_function: Callable,
+        args: dict = None) -> np.ndarray:
+    """
+    Parameters
+    ----------
+    parameters : lmfit.Parameters
+        A dictionary of values representing a model setting.
+    data : np.ndarray [1D]
+       The actual, measured time-series against which the model is fit.
+    objective_function : callable
+        The objective function that takes `parameters` and `args` and
+        produces a model time-series.
+    args : dictionary
+        A dictionary with additional parameters for the fitting routine. Default is None
+
+    Returns
+    -------
+    error : float
+        The residual sum of squared errors between the prediction and data.
+    """
+    prediction = objective_function(parameters, **args)
+    return np.nan_to_num(prediction - data, nan=1e12).sum()
 
 @jit
 def fit_glm(self,
