@@ -63,6 +63,8 @@ def glm_error_function(
     error : float
         The residual sum of squared errors between the prediction and data.
     """
+    # first dictate the baseline and amplitude of the prf
+    parameters['prf_baseline'].value, parameters['prf_amplitude'].value = 0, 1
     prediction = objective_function(parameters, **args)
     regressor_df['prf_amplitude'] = prediction
     np_dm = np.array(regressor_df)
