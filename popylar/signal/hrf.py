@@ -3,6 +3,7 @@ try:
     from jax import jit
 except ImportError:
     import numpy as np
+    from numba import jit
 import lmfit
 import nilearn.glm.first_level.hemodynamic_models as hemo
 import models

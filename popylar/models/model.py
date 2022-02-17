@@ -4,6 +4,7 @@ try:
     from jax import jit
 except ImportError:
     import numpy as np
+    from numba import jit
 import lmfit
 from stimuli.stimulus import Stimulus
 from signal.irf import IRF

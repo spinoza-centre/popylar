@@ -4,6 +4,7 @@ try:
     from jax import jit
 except ImportError:
     import numpy as np
+    from numba import jit
 import lmfit
 
 class IRF(ABC):

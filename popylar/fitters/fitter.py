@@ -4,8 +4,10 @@ try:
     from jax import jit
 except ImportError:
     import numpy as np
+    from numba import jit
 import pandas as pd
 import lmfit
+from joblib import Parallel, delayed
 from copy import copy
 import models
 import fit_utils
@@ -42,6 +44,7 @@ class Fitter(ABC):
                       optimizer: str = "",
                       optimizer_settings: dict = None,
                       parameters: list = None,
+                      error_function_type: str = 'difference',
                       **kwargs) -> None:
         pass
 
@@ -88,19 +91,98 @@ class PRFFitter(Fitter):
 
         # set up the rest of the regressors
         if regressor_df is None:
-            regressor_df = pd.DataFrame(np.ones(self.grid_predictions.shape[-1]), columns=['glm_prf_baseline'])
+            regressor_df = pd.DataFrame(np.ones((self.grid_predictions.shape[-1],2)),
+                            columns=['prf_baseline','prf_amplitude'])
 
         # fit the grid predictions
-        self.best_fit_betas = np.zeros((self.data.shape[0], regressor_df.shape[0]))
+        self.best_fit_betas = pd.DataFame(np.zeros((self.data.shape[0], regressor_df.shape[0])),
+                                          columns=regressor_df.columns)
         self.best_fit_rsqs = np.zeros((self.data.shape[0]))
         self.best_fit_models = np.zeros((self.data.shape[0]))
         for gi, gp in enumerate(self.grid_predictions):
-            regressor_df['glm_prf_amplitude'] = gp
+            regressor_df['prf_amplitude'] = gp  # fill in actual prediction as a regressor for prf amplitude
             betas, rsqs = fit_utils.fit_glm(self.data, design_matrix=regressor_df)
             improved_fits = rsqs > self.best_fit_rsqs
-            self.best_fit_betas[improved_fits] = betas[improved_fits]
+            self.best_fit_betas[improved_fits] = pd.DataFame(betas[improved_fits], columns=regressor_df.columns)
             self.best_fit_rsqs[improved_fits] = rsqs[improved_fits]
             self.best_fit_models[improved_fits] = gi
+
+    def iterative_fit(self,
+                      rsq_threshold: float = 0.0,
+                      n_jobs: int = -1,
+                      optimizer: str = "trust-constr",
+                      optimizer_settings: dict = None,
+                      parameters: list = None,
+                      error_function_type: str = 'difference',
+                      verbose: int = 1,
+                      **kwargs) -> None:
+        """iterative_fit performs an iterative fit over the data
+
+        Parameters
+        ----------
+        rsq_threshold : float, optional
+            which units in the data to fit, by default 0.0
+        n_jobs : int, optional
+            nr of jobs to spawn for fitting, by default -1
+        optimizer : str, optional
+            lmfit optimizer, by default "trust-constr"
+        optimizer_settings : dict, optional
+            settings for the optimizer, such as {maxiter, xtol, ftol, etc}, by default None
+        parameters : list, optional
+            list of lmfit Parameters objects, one for each unit, by default None
+        error_function_type : str, optional, by default 'difference'
+            whether to calculate errors by direct subtraction of model prediction and data ("difference"), or
+            by performing a GLM fit ("GLM") and subtracting yhat from the data. This latter option allows for
+            nuisance regression during the fitting process, for example.
+        """
+
+        # set up Parameters objects for each unit, with their starting points
+        # either from Grid Fit or from direct injection
+        if hasattr(self, grid_fit_results):
+            rsq_mask = self.grid_fit_results['rsq_grid'] > rsq_threshold
+        else:
+            rsq_mask = np.ones((self.n_units), dtype=bool)
+        assert rsq_mask.sum() > 0, 'there are no units that satisfy rsq_grid > rsq_threshold'
+        self.rsq_mask = rsq_mask
+
+        # if no parameters are given explicitly,
+        # need to construct sensible default parameters from grid_fit_results
+        if parameters is None:
+            assert hasattr(self, grid_fit_results), \
+                'need to run grid fitting before iterative fitting if no parameters are given.'
+            parameters = []
+            for unit in np.arange(self.n_units):
+                pars = copy(self.standard_parameters)
+                pars['prf_x'].value = self.grid_fit_results['prf_x'].iloc[unit]
+                pars['prf_y'].value = self.grid_fit_results['prf_y'].iloc[unit]
+                pars['prf_size'].value = self.grid_fit_results['prf_size'].iloc[unit]
+                pars['prf_baseline'].value = self.grid_fit_results['prf_baseline'].iloc[unit]
+                pars['prf_amplitude'].value = self.grid_fit_results['prf_amplitude'].iloc[unit]
+                if error_function_type is 'difference':
+                    for par in pars:
+                        par.vary = True
+                elif error_function_type is 'GLM':
+                    for par in pars:
+                        if par.name in ['prf_baseline', 'prf_amplitude']:
+                            par.vary = False
+                        else:
+                            par.vary = True
+                parameters.append(pars)
+
+        self.minimizer_results = Parallel(n_jobs, verbose=verbose)(
+            delayed(fit_utils.iterative_search)(model=self.model,
+                                        data=data,
+                                        parameters=params,
+                                        optimizer=optimizer,
+                                        optimizer_settings=optimizer_settings,
+                                        error_function_type=error_function_type,
+                                        verbose=verbose)
+            for (data, params) in zip(self.data[self.rsq_mask], parameters[self.rsq_mask]))
+
+        it_results = np.zeros((self.n_units, len(self.standard_parameters)))
+        it_results[self.rsq_mask] = np.array([[par.value for par in mr.params] for mr in self.minimizer_results])
+        self.iterative_fit_results = pd.DataFrame(it_results,
+                                                   columns=[param.name for param in self.standard_parameters])
 
 
 class Iso2DGaussianFitter(PRFFitter):
@@ -115,9 +197,9 @@ class Iso2DGaussianFitter(PRFFitter):
         # standard values for bounds should come from a config yaml, but are hard-coded now
         # to be broad and conform to (more or less) the size of the visual field
         if bounds is None:
-            bounds = dict(['prf_x', 'prf_y', 'prf_size'], [[-120,120], [-120,120], [0.05, 90]])
+            bounds = dict(['prf_x', 'prf_y', 'prf_size', 'prf_baseline', 'prf_amplitude'], [[-120,120], [-120,120], [0.05, 90], [-np.inf, np.inf], [-np.inf, np.inf]])
         self.standard_parameters = lmfit.Parameters()
-        for par_name in ['prf_x', 'prf_y', 'prf_size']:
+        for par_name in ['prf_x', 'prf_y', 'prf_size', 'prf_baseline', 'prf_amplitude']:
             self.standard_parameters[par_name] = lmfit.Parameter(name=par_name,
                                                             value=0.0,
                                                             min=bounds[par_name][0],
@@ -141,13 +223,15 @@ class Iso2DGaussianFitter(PRFFitter):
         # set up separate variables
         grid_xs, grid_ys, grid_sizes = np.meshgrid(x_grid, y_grid, size_grid)
         self.grid_xs, self.grid_ys, self.grid_sizes = grid_xs.ravel(), grid_ys.ravel(), grid_sizes.ravel()
-        self.par_names = ['prf_x', 'prf_y', 'prf_size']
+        self.par_names = ['prf_x', 'prf_y', 'prf_size', 'prf_baseline', 'prf_amplitude']
         # create predictions
         self.grid_predictions = np.zeros((self.grid_xs.shape[0], self.model.stimulus.masked_design_matrix.shape[-1]))
         for x, y, size, gi in zip(self.grid_xs, self.grid_ys, self.grid_sizes, np.arange(self.grid_xs.shape[0])):
             self.standard_parameters['prf_x'].value = x
             self.standard_parameters['prf_y'].value = y
             self.standard_parameters['prf_size'].value = size
+            self.standard_parameters['prf_baseline'].value = 0
+            self.standard_parameters['prf_amplitude'].value = 1
             self.grid_predictions[gi] = self.model.return_prediction(self.standard_parameters)
 
     def collect_grid_results(self,
@@ -161,7 +245,7 @@ class Iso2DGaussianFitter(PRFFitter):
         """
         assert hasattr(self, 'best_fit_betas'), 'Please perform grid fit before collecting its results'
         # set up results
-        self.grid_fit_results = pd.DataFrame(self.best_fit_betas, columns=columns)
+        self.grid_fit_results = self.best_fit_betas
         for parname, parvalues in zip(['prf_x', 'prf_y', 'prf_size'],
                                             [self.grid_xs,
                                             self.grid_ys,
@@ -208,22 +292,6 @@ class Iso2DGaussianFitter(PRFFitter):
 
         """
 
-        # set up Parameters objects for each unit, with their starting points
-        # either from Grid Fit or from direct injection
-        if hasattr(self, grid_fit_results):
-            rsq_mask = self.grid_fit_results['rsq_grid'] > rsq_threshold
-        else:
-            rsq_mask = np.ones((self.n_units), dtype=bool)
-        if parameters is None:
-            assert hasattr(self, grid_fit_results), \
-                'need to run grid fitting before iterative fitting if no parameters are given.'
-            parameters = []
-            for unit in np.arange(self.n_units):
-                pars = copy(self.standard_parameters)
-                pars['prf_x'].value = self.grid_fit_results['prf_x'].iloc[unit]
-                pars['prf_y'].value = self.grid_fit_results['prf_y'].iloc[unit]
-                pars['prf_size'].value = self.grid_fit_results['prf_size'].iloc[unit]
-                parameters.append(pars)
 
 
 

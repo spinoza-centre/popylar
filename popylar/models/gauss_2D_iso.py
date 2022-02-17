@@ -3,6 +3,7 @@ try:
     from jax import jit
 except ImportError:
     import numpy as np
+    from numba import jit
 import lmfit
 
 from model import Model
@@ -62,7 +63,8 @@ class Iso2DGaussianModel(Model):
         conv_tc = self.irf.convolve(prediction=raw_tc,
                                  parameters=parameters)
         hp_conv_tc = self.filter.filter(conv_tc)
-        return hp_conv_tc
+        final_tc = hp_conv_tc * parameters['prf_amplitude'].value + parameters['prf_baseline'].value
+        return final_tc
 
 class CSSIso2DGaussianModel(Model):
     """CSSIso2DGaussianModel of Kay et al, 2013.
@@ -88,7 +90,8 @@ class CSSIso2DGaussianModel(Model):
         conv_tc = self.irf.convolve(prediction=css_tc,
                                  parameters=parameters)
         hp_conv_tc = self.filter.filter(conv_tc)
-        return hp_conv_tc
+        final_tc = hp_conv_tc * parameters['prf_amplitude'].value + parameters['prf_baseline'].value
+        return final_tc
 
 class DoGIso2DGaussianModel(Model):
     """DoGIso2DGaussianModel of Zuiderbaan et al, 2013.
@@ -103,20 +106,21 @@ class DoGIso2DGaussianModel(Model):
         parameters : lmfit.Parameters
             the Parameters dictionary for this model
         """
-        rf_center = np.rot90gauss2D_iso_cart(x=self.stimulus.masked_coordinates[0],
+        rf_center = np.rot90(gauss2D_iso_cart(x=self.stimulus.masked_coordinates[0],
                               y=self.stimulus.masked_coordinates[1],
                               mu=[parameters['prf_x'].value, parameters['prf_y'].value],
                               sigma=parameters['prf_size'].value,
                               norm_sum=self.normalize_RFs))
-        rf_surround = np.rot90gauss2D_iso_cart(x=self.stimulus.masked_coordinates[0],
+        rf_surround = np.rot90(gauss2D_iso_cart(x=self.stimulus.masked_coordinates[0],
                               y=self.stimulus.masked_coordinates[1],
                               mu=[parameters['prf_surround_x'].value, parameters['prf_surround_y'].value],
                               sigma=parameters['prf_surround_size'].value,
                               norm_sum=self.normalize_RFs))
-        rf = rf_center - rf_surround * parameters['prf_surround_amplitude'].value
+        rf = rf_center * parameters['prf_amplitude'].value - rf_surround * parameters['prf_surround_amplitude'].value
 
         raw_tc = np.dot(rf, self.stimulus.masked_design_matrix)
         conv_tc = self.irf.convolve(prediction=raw_tc,
                                  parameters=parameters)
         hp_conv_tc = self.filter.filter(conv_tc)
-        return hp_conv_tc
+        final_tc = hp_conv_tc + parameters['prf_baseline'].value
+        return final_tc

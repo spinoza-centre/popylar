@@ -4,6 +4,7 @@ try:
     from jax import jit
 except ImportError:
     import numpy as np
+    from numba import jit
 import scipy as sp
 import lmfit
 import nilearn.glm.first_level.hemodynamic_models as hemo
@@ -102,6 +103,7 @@ class SG_Filter(Filter):
                 polyorder: int = 3,
                 highpass_add: str = 'no'):
         self.n_timepoints = n_timepoints
+        assert window_length % 2 is 1, "sp.signal.savgol_filter window_length must be odd"
         self.window_length = window_length
         self.polyorder = polyorder
         self.highpass_add = highpass_add
