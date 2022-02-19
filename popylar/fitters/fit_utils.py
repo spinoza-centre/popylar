@@ -4,7 +4,10 @@ try:
     from jax import jit
 except ImportError:
     import numpy as np
-    from numba import jit
+    try:
+        from numba import njit as jit
+    except ImportError:
+        print("need jax or numba for jit acceleration")
 import lmfit
 import pandas as pd
 import models
@@ -12,15 +15,15 @@ import models
 
 @jit
 def fit_glm(self,
-             data: np.ndarray,
-             design_matrix: pd.DataFrame) -> Tuple:
+            data: np.ndarray,
+            design_matrix: np.ndarray) -> Tuple:
     """fit_glm performs fit for a single model prediction
 
     Parameters
     ----------
     data : np.ndarray
         data, 2D, last dimension time, first dimension units (voxels, whatever)
-    design_matrix : pd.DataFrame
+    design_matrix : np.ndarray
         design matrix for the GLM. Minimally this would be a pRF model prediction and an intercept regressor,
         but can also contain nuisances, etc etc.
 
@@ -29,11 +32,11 @@ def fit_glm(self,
     Tuple (betas, rsq)
 
     """
-    np_dm = np.array(design_matrix)
-    betas, _, _, _ = np.linalg.lstsq(np_dm, data, rcond=None)
-    model = np.dot(betas, np_dm.T)
+    betas, _, _, _ = np.linalg.lstsq(design_matrix, data, rcond=None)
+    model = np.dot(betas, design_matrix.T)
     rsq = np.sum((model-data)**2)/np.sum(data**2)
     return betas, rsq
+
 
 @jit
 def glm_error_function(
@@ -79,6 +82,7 @@ def glm_error_function(
     model = np.dot(betas, np_dm.T)
     return np.nan_to_num(model - data, nan=1e12)
 
+
 @jit
 def diff_error_function(
         parameters: lmfit.Parameters,
@@ -105,6 +109,7 @@ def diff_error_function(
     """
     prediction = objective_function(parameters, **args)
     return np.nan_to_num(prediction - data, nan=1e12)
+
 
 def iterative_search(model: models.Model,
                      data: np.ndarray,
@@ -140,9 +145,9 @@ def iterative_search(model: models.Model,
         the columns in the df link directly to the names of parameters in the parameters argument.
     """
 
-
     if verbose > 0:
-        print(f'Performing bounded, unconstrained minimization using {optimizer}, with parameters {parameters.pretty_print()}.')
+        print(
+            f'Performing bounded, unconstrained minimization using {optimizer}, with parameters {parameters.pretty_print()}.')
     if error_function_type is 'difference':
         return lmfit.minimize(diff_error_function,
                               parameters,
@@ -155,4 +160,3 @@ def iterative_search(model: models.Model,
                               method=optimizer,
                               args=(data, model.return_prediction, regressor_df),
                               fit_kws=optimizer_settings)
-

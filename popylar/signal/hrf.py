@@ -95,6 +95,19 @@ class DD_HRF(HRF):
                                             oversampling=1,
                                             time_length=self.time_length,
                                             onset=0.)
+        # this HRF shape does have fittable HRF parameters,
+        # these will be used by the Fitter object
+        self.parameters = [lmfit.Parameter(name='hrf_td_gain',
+                                           value=0.0,
+                                           min=-50,
+                                           max=50,
+                                           vary=False),
+                            lmfit.Parameter(name='hrf_dd_gain',
+                                             value=0.0,
+                                             min=-50,
+                                             max=50,
+                                             vary=False)]
+
 
     def convolve(self,
                  prediction: np.ndarray,

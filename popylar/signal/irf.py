@@ -12,6 +12,8 @@ class IRF(ABC):
 
     Generic class for implementing impulse response functions, used for convolving model timecourses
     """
+    # standard: no fittable parameters
+    parameters: list = []
 
     @abstractmethod
     def convolve(self,
@@ -57,6 +59,7 @@ class Arbitrary_IRF(IRF):
         """
         self.irf_kernel = irf_kernel
 
+    @jit
     def convolve(self,
                  prediction: np.ndarray,
                  parameters: lmfit.Parameters) -> np.ndarray:
