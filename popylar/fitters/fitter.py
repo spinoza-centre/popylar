@@ -9,9 +9,9 @@ import pandas as pd
 import lmfit
 from joblib import Parallel, delayed
 from copy import copy
-import models
-import fit_utils
-import signal.hrf as hrf
+from popylar import models
+from popylar.fitters.fit_utils import iterative_search
+import popylar.signal.hrf as hrf
 
 
 class Fitter(ABC):
@@ -188,7 +188,7 @@ class PRFFitter(Fitter):
             self.parameters = parameters
 
         self.minimizer_results = Parallel(n_jobs, verbose=verbose)(
-            delayed(fit_utils.iterative_search)(model=self.model,
+            delayed(iterative_search)(model=self.model,
                                                 data=data,
                                                 parameters=params,
                                                 optimizer=optimizer,

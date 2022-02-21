@@ -10,8 +10,7 @@ except ImportError:
         print("need jax or numba for jit acceleration")
 import lmfit
 import pandas as pd
-import models
-
+from popylar import models
 
 @jit
 def fit_glm(self,
@@ -148,13 +147,13 @@ def iterative_search(model: models.Model,
     if verbose > 0:
         print(
             f'Performing bounded, unconstrained minimization using {optimizer}, with parameters {parameters.pretty_print()}.')
-    if error_function_type is 'difference':
+    if error_function_type == 'difference':
         return lmfit.minimize(diff_error_function,
                               parameters,
                               method=optimizer,
                               args=(data, model.return_prediction),
                               fit_kws=optimizer_settings)
-    elif error_function_type is 'GLM':
+    elif error_function_type == 'GLM':
         return lmfit.minimize(glm_error_function,
                               parameters,
                               method=optimizer,

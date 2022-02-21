@@ -29,7 +29,7 @@ class Stimulus:
         coordinates : numpy.ndarray
             coordinates for the 'pixels' in each of the 'feature' dimensions of the design matrix
         """
-        self.coordinates = coordinates.astype(np.float32)
+        self.coordinates = [cd.astype(np.float32) for cd in coordinates]
         if design_matrix.dtype in (bool, np.uint8):
             self.design_matrix = design_matrix
         else:
@@ -73,7 +73,10 @@ class PRFStimulus1D(Stimulus):
         coordinates : numpy.ndarray
             [description]
         """
-
+        super().__init__(design_matrix=design_matrix,
+                         sample_rate=sample_rate,
+                         coordinates=coordinates,
+                         kwargs=kwargs)
 class PRFStimulus2D(Stimulus):
     """PRFStimulus2D
 
@@ -115,10 +118,10 @@ class PRFStimulus2D(Stimulus):
                                 design_matrix.shape[1],
                                 endpoint=True)
         self.x, self.y = np.meshgrid(width_coordinates, height_coordinates)
-        super().__init__(coordinates=[self.x, self.y],
-                        design_matrix=design_matrix,
-                        sample_rate=sample_rate,
-                        kwargs=kwargs)
+        super().__init__(design_matrix=design_matrix,
+                         sample_rate=sample_rate,
+                         coordinates=[self.x, self.y],
+                         kwargs=kwargs)
 
 
 

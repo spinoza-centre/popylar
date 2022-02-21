@@ -8,9 +8,10 @@ except ImportError:
 import pandas as pd
 import lmfit
 from copy import copy
-import models
-import fit_utils
-from fitter import PRFFitter
+
+from popylar import models
+from popylar.fitters import fit_utils
+from popylar.fitters.fitter import PRFFitter
 
 class Iso2DGaussianFitter(PRFFitter):
     def __init__(self,
@@ -18,8 +19,8 @@ class Iso2DGaussianFitter(PRFFitter):
                  model: models.Model,
                  bounds: dict = None,
                  **kwargs) -> None:
-        super().__init__(data: np.ndarray,
-                         model: models.Model,
+        super().__init__(data=data,
+                         model=models.Model,
                          **kwargs)
         # cannot assert a specific Iso2DGaussianModel instance here
         # because subclasses will need different models.
@@ -94,7 +95,7 @@ class Iso2DGaussianFitter(PRFFitter):
     def grid_fit(self,
                  regressor_df: pd.DataFrame = None,
                  **kwargs) -> None:
-        super.grid_fit(regressor_df: pd.DataFrame=None,
+        super.grid_fit(regressor_df=regressor_df,
                        **kwargs)
         self.collect_grid_results(columns=regressor_df.columns)
 
@@ -105,9 +106,9 @@ class CSSIso2DGaussianFitter(Iso2DGaussianFitter):
                  model: models.Model,
                  bounds: dict = None,
                  **kwargs) -> None:
-        super().__init__(data: data,
-                         model: model,
-                         bounds: bounds,
+        super().__init__(data=data,
+                         model=model,
+                         bounds=bounds,
                          **kwargs)
         # cannot assert a specific Iso2DGaussianModel instance here
         # because subclasses will need different models.
@@ -138,9 +139,9 @@ class CSSIso2DGaussianFitter(Iso2DGaussianFitter):
 
         assert isinstance(self.model, models.CSSIso2DGaussianModel), \
             "CSSIso2DGaussianFitter requires a models.CSSIso2DGaussianModel instance as model"
-        new_obj = CSSIso2DGaussianFitter.__init__(data: linear_gauss.data,
-                                        model: model,
-                                        bounds: linear_gauss.bounds,
+        new_obj = CSSIso2DGaussianFitter.__init__(data=linear_gauss.data,
+                                        model=model,
+                                        bounds=linear_gauss.bounds,
                                         **kwargs)
 
         # now, internalize the linear gauss fitter's outcomes.
@@ -186,9 +187,9 @@ class CSSIso2DGaussianFitter(Iso2DGaussianFitter):
         """
         super.iterative_fit(rsq_threshold=rsq_threshold,
                             n_jobs=n_jobs,
-                            optimizer=optimizer
+                            optimizer=optimizer,
                             optimizer_settings=optimizer_settings,
-                            parameters=self.parameters
+                            parameters=self.parameters,
                             error_function_type=error_function_type,
                             verbose=verbose,
                             kwargs=kwargs)

@@ -6,8 +6,8 @@ except ImportError:
     from numba import jit
 import lmfit
 import nilearn.glm.first_level.hemodynamic_models as hemo
-import models
-from irf import IRF
+from popylar import models
+from .irf import IRF
 
 class HRF(IRF):
     """HRF class for haemodynamic response functions

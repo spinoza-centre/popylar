@@ -6,12 +6,12 @@ except ImportError:
     from numba import jit
 import lmfit
 
-from model import Model
-from stimuli.stimulus import PRFStimulus1D
-from signal.irf import IRF, Null_IRF
-from signal.filter import Filter, Null_Filter
+from popylar.models import Model
+from popylar.stimuli.stimulus import PRFStimulus1D
+from popylar.signal.irf import IRF, Null_IRF
+from popylar.signal.filter import Filter, Null_Filter
 
-from rf import gauss1D_cart
+from popylar.rf import gauss1D_cart
 
 
 class Iso1DGaussianModel(Model):

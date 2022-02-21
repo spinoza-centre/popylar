@@ -6,9 +6,9 @@ except ImportError:
     import numpy as np
     from numba import jit
 import lmfit
-from stimuli.stimulus import Stimulus
-from signal.irf import IRF
-from signal.filter import Filter
+from popylar.stimuli.stimulus import Stimulus
+from popylar.signal.irf import IRF
+from popylar.signal.filter import Filter
 
 class Model(ABC):
     """Model

@@ -8,12 +8,12 @@ except ImportError:
 import scipy as sp
 import lmfit
 import nilearn.glm.first_level.hemodynamic_models as hemo
-import models
+# from popylar import models
 
 def remean(prediction: np.ndarray,
            filtered_prediction: np.ndarray,
            highpass_add: str = 'no') -> np.ndarray:
-    if highpass_add is 'no':
+    if highpass_add == 'no':
         return filtered_prediction
     elif highpass_add == 'median':
         return filtered_prediction + np.median(prediction, axis=-1)
@@ -103,7 +103,7 @@ class SG_Filter(Filter):
                 polyorder: int = 3,
                 highpass_add: str = 'no'):
         self.n_timepoints = n_timepoints
-        assert window_length % 2 is 1, "sp.signal.savgol_filter window_length must be odd"
+        assert window_length % 2 == 1, "sp.signal.savgol_filter window_length must be odd"
         self.window_length = window_length
         self.polyorder = polyorder
         self.highpass_add = highpass_add
