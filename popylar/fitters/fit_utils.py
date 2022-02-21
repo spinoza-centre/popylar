@@ -13,8 +13,7 @@ import pandas as pd
 from popylar import models
 
 @jit
-def fit_glm(self,
-            data: np.ndarray,
+def fit_glm(data: np.ndarray,
             design_matrix: np.ndarray) -> Tuple:
     """fit_glm performs fit for a single model prediction
 

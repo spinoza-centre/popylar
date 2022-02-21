@@ -1,16 +1,12 @@
 from abc import ABC, abstractmethod
-try:
-    import jax.numpy as np
-    from jax import jit
-except ImportError:
-    import numpy as np
-    from numba import jit
+import numpy as np
+from numba import jit
 import pandas as pd
 import lmfit
 from joblib import Parallel, delayed
 from copy import copy
 from popylar import models
-from popylar.fitters.fit_utils import iterative_search
+from popylar.fitters.fit_utils import iterative_search, fit_glm
 import popylar.signal.hrf as hrf
 
 
@@ -80,6 +76,7 @@ class PRFFitter(Fitter):
         self.n_timepoints = self.data.shape[-1]
         self.data_var = self.data.var(axis=-1)
 
+    @jit
     def grid_fit(self,
                  regressor_df: pd.DataFrame = None,
                  **kwargs) -> None:
@@ -97,22 +94,23 @@ class PRFFitter(Fitter):
         if regressor_df is None:
             regressor_df = pd.DataFrame(np.ones((self.grid_predictions.shape[-1], 2)),
                                         columns=['prf_baseline', 'prf_amplitude'])
-
         # fit the grid predictions
-        self.best_fit_betas = pd.DataFame(np.zeros((self.data.shape[0], regressor_df.shape[0])),
+        self.best_fit_betas = pd.DataFrame(np.zeros((self.data.shape[0], regressor_df.shape[1])),
                                           columns=regressor_df.columns)
         self.best_fit_rsqs = np.zeros((self.data.shape[0]))
         self.best_fit_models = np.zeros((self.data.shape[0]))
         for gi, gp in enumerate(self.grid_predictions):
             # fill in actual prediction as a regressor for prf amplitude
             regressor_df['prf_amplitude'] = gp
-            betas, rsqs = fit_utils.fit_glm(self.data, design_matrix=np.array(regressor_df))
+            betas, rsqs = fit_glm(data=self.data,
+                                  design_matrix=np.array(regressor_df))
             improved_fits = rsqs > self.best_fit_rsqs
-            self.best_fit_betas[improved_fits] = pd.DataFame(
+            self.best_fit_betas[improved_fits] = pd.DataFrame(
                 betas[improved_fits], columns=regressor_df.columns)
             self.best_fit_rsqs[improved_fits] = rsqs[improved_fits]
             self.best_fit_models[improved_fits] = gi
 
+    @jit
     def iterative_fit(self,
                       rsq_threshold: float = 0.0,
                       n_jobs: int = -1,
@@ -174,10 +172,10 @@ class PRFFitter(Fitter):
                     if fit_hrf:
                         pars[irf_param.name].vary = True
                 # set variation of parameters
-                if error_function_type is 'difference':
+                if error_function_type == 'difference':
                     for par in pars:
                         par.vary = True
-                elif error_function_type is 'GLM':
+                elif error_function_type == 'GLM':
                     for par in pars:
                         if par.name in ['prf_baseline', 'prf_amplitude']:
                             par.vary = False

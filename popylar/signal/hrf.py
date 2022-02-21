@@ -1,9 +1,5 @@
-try:
-    import jax.numpy as np
-    from jax import jit
-except ImportError:
-    import numpy as np
-    from numba import jit
+import numpy as np
+from numba import jit
 import lmfit
 import nilearn.glm.first_level.hemodynamic_models as hemo
 from popylar import models
@@ -13,7 +9,7 @@ class HRF(IRF):
     """HRF class for haemodynamic response functions
     """
     def __init__(self,
-                model: models.Model,
+                sample_rate: float,
                 hrf_type: str = 'spm',
                 time_length: float = 50.0):
 
@@ -21,17 +17,16 @@ class HRF(IRF):
 
         Parameters
         ----------
-        model : models.Model
-            the model instance which will provide the necessary parameters,
-            such as TR, etc, etc.
+        sample_rate : float
+            rate at which signal is sampled.
         hrf_type : str
             the hrf type, of 'spm' or 'glover'. default is 'spm'
         time_length : float
             the length of the hrf kernel timecourse, in [s] as arg for nilearn's hemodynamic_models
 
         """
-        self.model = model
-        self.TR = 1.0 / self.model.stimulus.sample_rate
+        self.sample_rate = sample_rate
+        self.TR = 1.0 / self.sample_rate
         self.time_length = time_length
 
         if hrf_type == 'spm':

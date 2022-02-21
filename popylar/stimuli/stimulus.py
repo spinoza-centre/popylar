@@ -1,9 +1,5 @@
-try:
-    import jax.numpy as np
-    from jax import jit
-except ImportError:
-    import numpy as np
-    from numba import jit
+import numpy as np
+from numba import jit
 
 class Stimulus:
     """Stimulus
@@ -35,6 +31,7 @@ class Stimulus:
         else:
             self.design_matrix = design_matrix.astype(np.float32)
         self.sample_rate = sample_rate
+        self.n_timepoints = self.design_matrix.shape[-1]
         self.__dict__.update(kwargs)
         self.mask_dm()
 
@@ -77,6 +74,7 @@ class PRFStimulus1D(Stimulus):
                          sample_rate=sample_rate,
                          coordinates=coordinates,
                          kwargs=kwargs)
+
 class PRFStimulus2D(Stimulus):
     """PRFStimulus2D
 
@@ -120,7 +118,7 @@ class PRFStimulus2D(Stimulus):
         self.x, self.y = np.meshgrid(width_coordinates, height_coordinates)
         super().__init__(design_matrix=design_matrix,
                          sample_rate=sample_rate,
-                         coordinates=[self.x, self.y],
+                         coordinates=[self.x.T, self.y.T],
                          kwargs=kwargs)
 
 

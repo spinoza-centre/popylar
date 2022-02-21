@@ -1,10 +1,6 @@
 from abc import ABC, abstractmethod
-try:
-    import jax.numpy as np
-    from jax import jit
-except ImportError:
-    import numpy as np
-    from numba import jit
+import numpy as np
+from numba import jit
 import lmfit
 from popylar.stimuli.stimulus import Stimulus
 from popylar.signal.irf import IRF

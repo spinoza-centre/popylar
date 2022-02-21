@@ -1,10 +1,6 @@
 from abc import ABC, abstractmethod
-try:
-    import jax.numpy as np
-    from jax import jit
-except ImportError:
-    import numpy as np
-    from numba import jit
+import numpy as np
+from numba import jit
 import pandas as pd
 import lmfit
 from copy import copy
@@ -20,7 +16,7 @@ class Iso2DGaussianFitter(PRFFitter):
                  bounds: dict = None,
                  **kwargs) -> None:
         super().__init__(data=data,
-                         model=models.Model,
+                         model=model,
                          **kwargs)
         # cannot assert a specific Iso2DGaussianModel instance here
         # because subclasses will need different models.
@@ -30,8 +26,8 @@ class Iso2DGaussianFitter(PRFFitter):
         # standard values for bounds should come from a config yaml, these standards are hard-coded
         # to be broad and conform to (more or less) the size of the visual field
         if bounds is None:
-            self.bounds = dict(['prf_x', 'prf_y', 'prf_size', 'prf_baseline', 'prf_amplitude'], [
-                          [-180, 180], [-180, 180], [0.05, 180], [-np.inf, np.inf], [-np.inf, np.inf]])
+            self.bounds = dict(zip(['prf_x', 'prf_y', 'prf_size', 'prf_baseline', 'prf_amplitude'], [
+                          [-180, 180], [-180, 180], [0.05, 180], [-np.inf, np.inf], [-np.inf, np.inf]]))
         else:
             self.bounds = bounds
 
@@ -95,7 +91,7 @@ class Iso2DGaussianFitter(PRFFitter):
     def grid_fit(self,
                  regressor_df: pd.DataFrame = None,
                  **kwargs) -> None:
-        super.grid_fit(regressor_df=regressor_df,
+        super().grid_fit(regressor_df=regressor_df,
                        **kwargs)
         self.collect_grid_results(columns=regressor_df.columns)
 

@@ -1,9 +1,5 @@
-try:
-    import jax.numpy as np
-    from jax import jit
-except ImportError:
-    import numpy as np
-    from numba import jit
+import numpy as np
+from numba import jit
 import lmfit
 
 from popylar.models import Model
@@ -55,11 +51,10 @@ class Iso2DGaussianModel(Model):
             the Parameters dictionary for this model
         """
         params = parameters.valuesdict()
-        rf = np.rot90(gauss2D_iso_cart(x=self.stimulus.masked_coordinates[0],
+        rf = gauss2D_iso_cart(x=self.stimulus.masked_coordinates[0],
                                        y=self.stimulus.masked_coordinates[1],
                                        mu=[params['prf_x'], params['prf_y']],
-                                       sigma=params['prf_size'],
-                                       norm_sum=self.normalize_RFs))
+                                       sigma=params['prf_size'])
 
         raw_tc = np.dot(rf, self.stimulus.masked_design_matrix)
         conv_tc = self.irf.convolve(prediction=raw_tc,
@@ -84,11 +79,10 @@ class CSSIso2DGaussianModel(Model):
             the Parameters dictionary for this model
         """
         params = parameters.valuesdict()
-        rf = np.rot90(gauss2D_iso_cart(x=self.stimulus.masked_coordinates[0],
+        rf = gauss2D_iso_cart(x=self.stimulus.masked_coordinates[0],
                                        y=self.stimulus.masked_coordinates[1],
                                        mu=[params['prf_x'], params['prf_y']],
-                                       sigma=params['prf_size'],
-                                       norm_sum=self.normalize_RFs))
+                                       sigma=params['prf_size'])
 
         raw_tc = np.dot(rf, self.stimulus.masked_design_matrix)
         # To be clear:
@@ -119,18 +113,16 @@ class DoGIso2DGaussianModel(Model):
             the Parameters dictionary for this model
         """
         params = parameters.valuesdict()
-        rf_center = np.rot90(gauss2D_iso_cart(x=self.stimulus.masked_coordinates[0],
+        rf_center = gauss2D_iso_cart(x=self.stimulus.masked_coordinates[0],
                                               y=self.stimulus.masked_coordinates[1],
                                               mu=[params['prf_center_x'],
                                                   params['prf_center_y']],
-                                              sigma=params['prf_center_size'],
-                                              norm_sum=self.normalize_RFs))
-        rf_surround = np.rot90(gauss2D_iso_cart(x=self.stimulus.masked_coordinates[0],
+                                              sigma=params['prf_center_size'])
+        rf_surround = gauss2D_iso_cart(x=self.stimulus.masked_coordinates[0],
                                                 y=self.stimulus.masked_coordinates[1],
                                                 mu=[params['prf_surround_x'],
                                                     params['prf_surround_y']],
-                                                sigma=params['prf_surround_size'],
-                                                norm_sum=self.normalize_RFs))
+                                                sigma=params['prf_surround_size'])
         # DoG is, in essence, a linear model.
         # This means that we can create a single spatial receptive field
         # and dot this with the stimulus.
@@ -158,18 +150,16 @@ class DNIso2DGaussianModel(Model):
             the Parameters dictionary for this model
         """
         params = parameters.valuesdict()
-        rf_center = np.rot90(gauss2D_iso_cart(x=self.stimulus.masked_coordinates[0],
+        rf_center = gauss2D_iso_cart(x=self.stimulus.masked_coordinates[0],
                                               y=self.stimulus.masked_coordinates[1],
                                               mu=[params['prf_center_x'],
                                                   params['prf_center_y']],
-                                              sigma=params['prf_center_size'],
-                                              norm_sum=self.normalize_RFs))
-        rf_surround = np.rot90(gauss2D_iso_cart(x=self.stimulus.masked_coordinates[0],
+                                              sigma=params['prf_center_size'])
+        rf_surround = gauss2D_iso_cart(x=self.stimulus.masked_coordinates[0],
                                                 y=self.stimulus.masked_coordinates[1],
                                                 mu=[params['prf_surround_x'],
                                                     params['prf_surround_y']],
-                                                sigma=params['prf_surround_size'],
-                                                norm_sum=self.normalize_RFs))
+                                                sigma=params['prf_surround_size'])
         prf_tc = np.dot(rf_center, self.stimulus.masked_design_matrix)
         prf_surround_tc = np.dot(rf_surround, self.stimulus.masked_design_matrix)
         # since the DN model is a non-linear model like the CSS model,
