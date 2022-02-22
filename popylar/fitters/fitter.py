@@ -5,6 +5,8 @@ import pandas as pd
 import lmfit
 from joblib import Parallel, delayed
 from copy import copy
+from tqdm import tqdm
+
 from popylar import models
 from popylar.fitters.fit_utils import iterative_search, fit_glm
 import popylar.signal.hrf as hrf
@@ -99,16 +101,17 @@ class PRFFitter(Fitter):
                                           columns=regressor_df.columns)
         self.best_fit_rsqs = np.zeros((self.data.shape[0]))
         self.best_fit_models = np.zeros((self.data.shape[0]))
-        for gi, gp in enumerate(self.grid_predictions):
+        for gi, gp in tqdm(enumerate(self.grid_predictions)):
             # fill in actual prediction as a regressor for prf amplitude
             regressor_df['prf_amplitude'] = gp
             betas, rsqs = fit_glm(data=self.data,
-                                  design_matrix=np.array(regressor_df))
+                                  design_matrix=np.array(regressor_df, dtype=np.float32))
             improved_fits = rsqs > self.best_fit_rsqs
             self.best_fit_betas[improved_fits] = pd.DataFrame(
                 betas[improved_fits], columns=regressor_df.columns)
             self.best_fit_rsqs[improved_fits] = rsqs[improved_fits]
             self.best_fit_models[improved_fits] = gi
+
 
     @jit
     def iterative_fit(self,

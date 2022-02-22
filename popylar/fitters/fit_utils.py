@@ -1,18 +1,14 @@
 from typing import Callable, Tuple
+import numpy as np
 try:
-    import jax.numpy as np
-    from jax import jit
+    from numba import jit, njit, f4
 except ImportError:
-    import numpy as np
-    try:
-        from numba import njit as jit
-    except ImportError:
-        print("need jax or numba for jit acceleration")
+    print("need jax or numba for jit acceleration")
 import lmfit
 import pandas as pd
 from popylar import models
 
-@jit
+@njit(fastmath=True)
 def fit_glm(data: np.ndarray,
             design_matrix: np.ndarray) -> Tuple:
     """fit_glm performs fit for a single model prediction
@@ -22,18 +18,18 @@ def fit_glm(data: np.ndarray,
     data : np.ndarray
         data, 2D, last dimension time, first dimension units (voxels, whatever)
     design_matrix : np.ndarray
-        design matrix for the GLM. Minimally this would be a pRF model prediction and an intercept regressor,
+        design matrix, 2D, for the GLM. Minimally this would be a pRF model prediction and an intercept regressor,
         but can also contain nuisances, etc etc.
 
     Returns
     -------
-    Tuple (betas, rsq)
+    Tuple (betas (2D), rsq (1D))
 
     """
-    betas, _, _, _ = np.linalg.lstsq(design_matrix, data, rcond=None)
-    model = np.dot(betas, design_matrix.T)
-    rsq = np.sum((model-data)**2)/np.sum(data**2)
-    return betas, rsq
+    betas, _, _, _ = np.linalg.lstsq(design_matrix, data.T)
+    model = np.dot(design_matrix, betas).T
+    rsq = np.sum((model-data)**2, axis=1)/np.sum(data**2, axis=1)
+    return betas.T, rsq
 
 
 @jit

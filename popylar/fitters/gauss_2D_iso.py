@@ -67,6 +67,8 @@ class Iso2DGaussianFitter(PRFFitter):
             self.standard_parameters['prf_baseline'].value = 0
             self.standard_parameters['prf_amplitude'].value = 1
             self.grid_predictions[gi] = self.model.return_prediction(self.standard_parameters)
+        # filter the predictions
+        self.grid_predictions = self.model.filter.filter(self.grid_predictions)
 
     def collect_grid_results(self,
                              columns: list):
@@ -85,7 +87,7 @@ class Iso2DGaussianFitter(PRFFitter):
                                       [self.grid_xs,
                                        self.grid_ys,
                                        self.grid_sizes]):
-            self.grid_fit_results[parname] = parvalues[self.best_fit_models]
+            self.grid_fit_results[parname] = parvalues[self.best_fit_models.astype(int)]
         self.grid_fit_results['grid_rsq'] = self.best_fit_rsqs
 
     def grid_fit(self,

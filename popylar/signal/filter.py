@@ -6,15 +6,16 @@ import lmfit
 import nilearn.glm.first_level.hemodynamic_models as hemo
 # from popylar import models
 
+# @jit(nopython=True)
 def remean(prediction: np.ndarray,
            filtered_prediction: np.ndarray,
            highpass_add: str = 'no') -> np.ndarray:
     if highpass_add == 'no':
         return filtered_prediction
     elif highpass_add == 'median':
-        return filtered_prediction + np.median(prediction, axis=-1)
+        return (np.median(prediction, axis=-1) + filtered_prediction.T).T
     elif highpass_add == 'mean':
-        return filtered_prediction + np.mean(prediction, axis=-1)
+        return (np.mean(prediction, axis=-1) + filtered_prediction.T).T
 
 
 class Filter(ABC):
@@ -66,7 +67,7 @@ class DCT_Filter(Filter):
         self.highpass_add = highpass_add
 
         signal_duration = self.n_timepoints / self.sample_rate
-        self.drop_highpass_modes = 1 + np.floor(2 * self.highpass_freq * signal_duration)
+        self.drop_highpass_modes = int(1 + np.floor(2 * self.highpass_freq * signal_duration))
 
     def filter(self,
                 prediction: np.ndarray,
@@ -83,9 +84,10 @@ class DCT_Filter(Filter):
         np.ndarray
             the filtered prediction
         """
-
+        # if prediction.ndim == 1:
+        #     prediction = prediction[np.newaxis, :]
         coeffs = sp.fft.dct(prediction, norm='ortho', axis=-1)
-        coeffs[:, :self.drop_highpass_modes] = 0
+        coeffs[..., :self.drop_highpass_modes] = 0
         filtered_prediction = sp.fft.idct(coeffs, norm='ortho', axis=-1)
 
         return remean(prediction, filtered_prediction, highpass_add=self.highpass_add)
